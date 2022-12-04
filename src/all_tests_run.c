@@ -25,12 +25,12 @@ void run_tests(void) {
                          suite_memset(),
                           suite_strcpy(),
                          suite_strncpy(),
-                         // suite_strtok(),
-                         // suite_strerror(),
+                          suite_strtok(),
+                          suite_strerror(),
                           suite_strcat(),
                           suite_strncat(),
                           suite_memchr(),
-                         // suite_strstr(),
+                         suite_strstr(),
                          suite_strpbrk(),
                          suite_strrchr(),
                          suite_strchr(),
@@ -38,7 +38,7 @@ void run_tests(void) {
                          // suite_to_upper(),
                          // suite_trim(),
                          // suite_insert(),
-                         // suite_sprintf(),
+                          suite_sprintf(),
                          NULL};
 
   for (Suite **current_testcase = list_cases; *current_testcase != NULL;

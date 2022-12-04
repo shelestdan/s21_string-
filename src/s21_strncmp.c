@@ -1,10 +1,11 @@
 #include "s21_string.h"
 
-int s21_strncmp(const char *str_1, const char *str_2, s21_size_t n) {
-   s21_size_t x = 0;
-  for (x = 0; x < (n - 1); x++) {
-   if (str_1[x] != str_2[x]) {
-    break;
-    } 
-} return str_1[x] - str_2[x];
+int s21_strncmp(const char *str1, const char *str2, s21_size_t n) {
+   unsigned char s1, s2;
+   while (n) {
+    s1 = *str1++;
+    s2 = *str2++;
+    if (s1 == '\0' || (s1 != s2)) return s1 - s2;
+    n--;
+   } return 0;
 }

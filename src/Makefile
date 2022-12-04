@@ -35,3 +35,6 @@ clean:
 	-rm -f tests
 	-rm -f report
 	find . -type d -name 'tests.dSYM' -exec rm -r {} +
+
+.PHONY:
+	test1.c
