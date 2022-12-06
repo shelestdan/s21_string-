@@ -16,11 +16,11 @@ s_info *initialise(s_info *ints) {
   return (ints);
 }
 
-int s21_ssprintf(const char *format, ...) {  // добавить запись в массив
+int s21_ssprintf(char *str, const char *format, ...) {  // добавить запись в массив
   int i;
   int result;
   s_info *ints;
-
+  char j[1000] = {0};
   ints = (s_info *)malloc(sizeof(s_info));
   if (!ints) {
     return -1;
@@ -31,13 +31,19 @@ int s21_ssprintf(const char *format, ...) {  // добавить запись в
   i = -1;
   result = 0;
   while (format[++i]) {
-    if (format[i] == '%')
+    if (format[i] == '%'){
       i = print_format(ints, format, ++i);
-    else
+      j[1000] = i;
+      strcat(str, j);
+    } else {
       result += write(1, &format[i], 1);
+      j[1000] = result;
+      strcat(str, j);
+    }
   }
   va_end(ints->args);
   result += ints->total_length;
+  
   free(ints);
   return result;
 }
@@ -81,9 +87,9 @@ void print_unsigned(s_info *ints) {
     unsint_if(uns, ints);
     if (uns == 0 && ints->precision == 0 && ints->point) {
       if (ints->width) {
-        ints->total_length += write(1, " ", 1); //?
+        ints->total_length += write(1, " ", 1);  //?
       } else {
-        ints->total_length += write(1, "0", 1); //?
+        ints->total_length += write(1, "0", 1);  //?
       }
     } else {
       putnbr(uns, ints);
@@ -326,8 +332,8 @@ int check_wparg(s_info *ints, const char *format, int temp) {
 
 int n_len(int n) {
   int len = 1;
-  if (n == -2147483648) { //?
-    return 1;  
+  if (n == -2147483648) {  //?
+    return 1;
   }
   if (n < 0) {
     n *= -1;
@@ -443,25 +449,19 @@ void litle_if(s_info *ints, int *numb) {
 
 void if_next(s_info *ints, int *numb) {
   if (ints->width > 0 && !ints->dash && !ints->zero_padding)
-		width_full(ints, ints->zero_padding);
-	if (ints->width > 0 && !ints->dash && ints->zero_padding)
-	{
-		if (!ints->point)
-		{
-			ints->total_length += write(1, "-", 1);
-			width_full(ints, ints->zero_padding);
-		}
-		else
-		{
-			width_full(ints, 0);
-			ints->total_length += write(1, "-", 1);
-		}
-	}
-	else
-		ints->total_length += write(1, "-", 1);
-	if (ints->precision > 0)
-		prec_ful(ints);
-	*numb *= -1;
+    width_full(ints, ints->zero_padding);
+  if (ints->width > 0 && !ints->dash && ints->zero_padding) {
+    if (!ints->point) {
+      ints->total_length += write(1, "-", 1);
+      width_full(ints, ints->zero_padding);
+    } else {
+      width_full(ints, 0);
+      ints->total_length += write(1, "-", 1);
+    }
+  } else
+    ints->total_length += write(1, "-", 1);
+  if (ints->precision > 0) prec_ful(ints);
+  *numb *= -1;
 }
 
 void else_if(s_info *ints, int *numb) {
@@ -599,6 +599,8 @@ size_t s21strlen(const char *str) {
 }
 
 int main() {
-  s21_ssprintf("%s %d", "sdfasdf", 13);
+  char k[1000];
+  s21_ssprintf(k,"d123 %sJJJJJ %d hjkl", "DDsDDD", 13341);
+  printf("%s", k);
   return 0;
 }

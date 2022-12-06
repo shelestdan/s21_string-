@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 typedef struct info {
@@ -17,7 +18,7 @@ typedef struct info {
   int hash;
 } s_info;
 
-int s21_ssprintf(const char *format, ...);
+int s21_ssprintf(char *str, const char *format, ...);
 void wparg_help(s_info *ints);
 void print_res(s_info *ints, const char *str, int temp);
 int print_format(s_info *ints, const char *format, int temp);
