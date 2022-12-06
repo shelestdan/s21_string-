@@ -16,7 +16,7 @@ s_info *initialise(s_info *ints) {
   return (ints);
 }
 
-int s21_ssprintf(char *str, const char *format, ...) {  // добавить запись в массив
+int s21_ssprintf(char *str, const char *format, ...) {
   int i;
   int result;
   s_info *ints;
@@ -87,9 +87,9 @@ void print_unsigned(s_info *ints) {
     unsint_if(uns, ints);
     if (uns == 0 && ints->precision == 0 && ints->point) {
       if (ints->width) {
-        ints->total_length += write(1, " ", 1);  //?
+        ints->total_length += write(1, " ", 1);
       } else {
-        ints->total_length += write(1, "0", 1);  //?
+        ints->total_length += write(1, "0", 1);
       }
     } else {
       putnbr(uns, ints);
@@ -332,7 +332,7 @@ int check_wparg(s_info *ints, const char *format, int temp) {
 
 int n_len(int n) {
   int len = 1;
-  if (n == -2147483648) {  //?
+  if (n == -2147483648) {
     return 1;
   }
   if (n < 0) {
@@ -437,7 +437,7 @@ void putnbr(unsigned n, s_info *ints) {
 
 void litle_if(s_info *ints, int *numb) {
   ints->total_length += write(1, "-", 1);
-  *numb = 147483648;  // ?
+  *numb = 147483648;
   if (ints->width > 0 && !ints->dash) {
     width_full(ints, ints->zero_padding);
   }
