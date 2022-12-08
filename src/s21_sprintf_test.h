@@ -2,22 +2,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
+
+#define CHAR_PATTERN 45000
 
 typedef struct info {
-  va_list args;
-  int width;
-  int precision;
-  int hex_size;
-  int zero_padding;
-  int point;
-  int dash;
-  int total_length;
-  int sign;
-  int is_zero;
-  int space;
-  int hash;
+    va_list args;
+    int width;
+    int precision;
+    int hex_size;
+    int zero_padding;
+    int point;
+    int dash;
+    int total_length;
+    int sign;
+    int is_zero;
+    int space;
+    int hash;
+    float numb_fl;
+    char full_buf[CHAR_PATTERN];
 } s_info;
 
+char *itoa(int value, char *result, int base);
 int s21_ssprintf(char *str, const char *format, ...);
 void wparg_help(s_info *ints);
 void print_res(s_info *ints, const char *str, int temp);
@@ -30,6 +36,7 @@ void print_pointer(s_info *ints);
 void print_hex(s_info *ints);
 void print_hexup(s_info *ints);
 void print_per(s_info *ints);
+void print_float(s_info *ints);
 int check_format(const char *format, int temp);
 int check_format_letter(const char *format, int temp);
 int check_format_letter_2(const char *format, int temp);
@@ -38,6 +45,9 @@ int check_point(s_info *ints, const char *format, int temp);
 int check_wp(s_info *ints, const char *format, int temp);
 int check_wparg(s_info *ints, const char *format, int temp);
 int n_len(int n);
+void ftoa(float n, char *res, int afterpoint);
+void reverse(char *str, int len);
+int intToStr(int x, char str[], int d);
 unsigned int un_len(unsigned int n);
 void width_full(s_info *ints, int flag);
 void prec_ful(s_info *ints);
@@ -55,3 +65,13 @@ void numb_if(int numb, s_info *ints);
 void unsint_if(unsigned int uns, s_info *ints);
 int check_help(s_info *ints, const char *format, int temp);
 size_t s21strlen(const char *str);
+
+
+
+int main() {
+    char k[10000] = {0};
+    s21_ssprintf(k, "%d %f %d %s %s", 444123866 , 1231.123 , 555, "popo", "qeqw");
+    // sprintf(k, "%lf asd %6d", 1342303.3, 84567345);
+    printf("%s", k);
+    return 0;
+}
