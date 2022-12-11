@@ -18,6 +18,7 @@ s_info *initialise(s_info *ints) {
     ints->full_buf[CHAR_PATTERN] = 0;
     ints->flag_f_float = 0;
     ints->flag_o = 0;
+    ints->flag_e = 0;
     return (ints);
 }
 
@@ -35,14 +36,12 @@ int s21_ssprintf(char *str, const char *format, ...) {
         if (format[i] == '%') {
             i = print_format(ints, format, ++i);
         } else {
-            ints->j_save_format = strlen(ints->full_buf);
+            ints->j_save_format = s21strlen(ints->full_buf);
             ints->full_buf[ints->j_save_format] = format[i];
             ints->j_save_format++;
         }
     }
-    ints->j_save_format += ints->total_length;
-    ints->j_save_format++;
-    strcat(str, ints->full_buf);
+    s_strcat(str, ints->full_buf);
     va_end(ints->args);
     free(ints);
     return ints->j_save_format;
@@ -51,6 +50,11 @@ int s21_ssprintf(char *str, const char *format, ...) {
 void print_res(s_info *ints, const char *str, int temp) {
     if (str[temp] == 'c') print_char(ints);
     if (str[temp] == 's') print_str(ints);
+    if (str[temp] == 'e') {
+        ints->flag_e++;
+        flag_exp(ints);
+    }
+    if (str[temp] == 'g' || str[temp] == 'G') s21_sprintf_g(ints);
     if (str[temp] == 'p') print_pointer(ints);
     if (str[temp] == 'd' || str[temp] == 'i') print_numb(ints);
     if (str[temp] == 'f') {
@@ -80,7 +84,7 @@ int print_format(s_info *ints, const char *format, int temp) {
     if (format[temp] == '*') temp = check_wparg(ints, format, temp);
     if (format[temp] == 'n') {
         int c;
-        c = (int)strlen(ints->full_buf);
+        c = (int)s21strlen(ints->full_buf);
         *va_arg(ints->args, int *) = c;
     } else
         temp = check_wp(ints, format, temp);
@@ -98,10 +102,10 @@ void print_unsigned(s_info *ints) {
         unsint_if(uns, ints);
         if (uns == 0 && ints->precision == 0 && ints->point) {
             if (ints->width) {
-                strcat(ints->full_buf, "0");
+                s_strcat(ints->full_buf, "0");
                 ints->j_save_format++;
             } else {
-                strcat(ints->full_buf, "0");
+                s_strcat(ints->full_buf, "0");
                 ints->j_save_format++;
             }
         } else {
@@ -124,6 +128,15 @@ void reverse(char *str, int len) {
     }
 }
 
+char *s_strcat(char *dest, const char *src) {
+    int start = s21strlen(dest);
+    int end = s21strlen(src);
+    for (int i = 0; i < (start + end); i++) {
+        dest[start + i] = src[i];
+    }
+    return dest;
+}
+
 int intToStr(int x, char str[], int d) {
     int i = 0;
     while (x) {
@@ -137,17 +150,89 @@ int intToStr(int x, char str[], int d) {
 }
 
 void ftoa(float n, char *res, s_info *ints) {
-    if (ints->precision == 0) ints->precision = 6;
+    if (ints->precision == 0 && !ints->flag_e) ints->precision = 6;
     int ipart = (int)n;
     float fpart = n - (float)ipart;
     int i = intToStr(ipart, res, 0);
+    if (i == 0) i++;
     if (ints->precision != 0) {
+        if (ipart == 0) res[0] = '0';
         res[i] = '.';
         fpart = fpart * pow(10, ints->precision);
         fpart = fpart * 10.0f;
         fpart = fpart > 0 ? floor(fpart + 0.5f) : ceil(fpart - 0.5f);
         fpart = fpart / 10.0f;
         intToStr((int)fpart, res + i + 1, ints->precision);
+    }
+}
+
+int flag_exp_g(s_info *ints, double b) {
+    double val = b;
+    int e = 0;
+    if (val >= 10) {
+        while (val >= 10) {
+            val /= 10.0;
+            e += 1;
+        }
+    } else if (val < 1 && val != 0) {
+        while (val < 1) {
+            val *= 10;
+            e -= 1;
+        }
+    }
+    val = round(val * pow(10, ints->precision)) * pow(10, -(ints->precision));
+    if (val >= 10) {
+        val /= 10.0;
+        e += 1;
+    } else if (val < 1 && val != 0) {
+        val *= 10;
+        e -= 1;
+    }
+    // printf("%d", e);
+    return e;
+}
+
+void s21_sprintf_g(s_info *ints) {
+    double b = 0;
+    char pattern_g[CHAR_PATTERN] = {0};
+    b = va_arg(ints->args, double);
+    if (ints->precision == 0)
+        ints->precision = 6;
+    else if (ints->precision == 1)
+        ints->precision = 1;
+    long double b_copy = b;
+    if (b_copy < 0) b_copy *= -1;
+    int e = flag_exp_g(ints, b);
+    if (ints->precision > e && e >= -4) {
+        ftoa(b, pattern_g, ints);
+        s_strcat(ints->full_buf, pattern_g);
+    } else {
+        char buff[CHAR_PATTERN] = {0};
+        int pow = 0;
+        double val = b;
+        char sign = (int)val == 0 ? '-' : '+';
+        if ((int)val - val) {
+            while ((int)val == 0) {
+                pow++;
+                val *= 10;
+            }
+        } else {
+            sign = '+';
+        }
+        while ((int)val / 10 != 0) {
+            pow++;
+            val /= 10;
+        }
+        ftoa(val, buff, ints);
+        s21_size_t i = s21strlen(buff);
+        buff[i] = 'e';
+        buff[i + 1] = sign;
+        buff[i + 3] = pow % 10 + '0';
+        pow /= 10;
+        buff[i + 2] = pow % 10 + '0';
+        buff[i + 4] = '\0';
+        s_strcat(ints->full_buf, buff);
+        ints->j_save_format++;
     }
 }
 
@@ -185,17 +270,16 @@ void print_numb(s_info *ints) {
         else_if(ints, &numb);
         if (numb == 0 && ints->precision == 0 && ints->point) {
             if (ints->width) {
-                strcat(ints->full_buf, " ");
+                s_strcat(ints->full_buf, " ");
                 ints->j_save_format++;
             } else {
-                strcat(ints->full_buf, "0");
+                s_strcat(ints->full_buf, "0");
                 ints->j_save_format++;
             }
         } else {
             itoa(numb, tolik_n, 10);
-            strcat(ints->full_buf, tolik_n);
+            s_strcat(ints->full_buf, tolik_n);
             ints->j_save_format++;
-            // printf("%s", ints->full_buf);
         }
         if (ints->width > 0 && ints->dash) {
             width_full(ints, 0);
@@ -208,7 +292,7 @@ void print_char(s_info *ints) {
     ints->j_save_format++;
     c = va_arg(ints->args, int);
     char str1[CHAR_PATTERN] = {c, '\0'};
-    strcat(ints->full_buf, str1);
+    s_strcat(ints->full_buf, str1);
     if (ints->width) ints->width -= 1;
     if (ints->width > 0 && !ints->dash) width_full(ints, 0);
     if (ints->width > 0 && ints->dash) width_full(ints, 0);
@@ -245,7 +329,7 @@ void print_pointer(s_info *ints) {
     if (points != 0 || !ints->point) scanndase(ints, points);
     if (ints->width) ints->width -= !ints->hex_size;
     if (ints->width > 0 && !ints->dash) width_full(ints, ints->zero_padding);
-    strcat(ints->full_buf, "0x");
+    s_strcat(ints->full_buf, "0x");
     ints->j_save_format++;
     if (points != 0 || !ints->point) point_b(ints, points, 'x');
     if (ints->width > 0 && ints->dash) width_full(ints, 0);
@@ -267,10 +351,10 @@ void print_hex(s_info *ints) {
         hex_help(ints, hex);
         if (hex == 0 && ints->precision == 0 && ints->point) {
             if (ints->width) {
-                strcat(ints->full_buf, " ");
+                s_strcat(ints->full_buf, " ");
                 ints->j_save_format++;
             } else {
-                strcat(ints->full_buf, "0");
+                s_strcat(ints->full_buf, "0");
                 ints->j_save_format++;
             }
         } else {
@@ -297,10 +381,10 @@ void print_hexup(s_info *ints) {
         hexup_help(ints, hexup);
         if (hexup == 0 && ints->precision == 0 && ints->point) {
             if (ints->width) {
-                strcat(ints->full_buf, " ");
+                s_strcat(ints->full_buf, " ");
                 ints->j_save_format++;
             } else {
-                strcat(ints->full_buf, "0");
+                s_strcat(ints->full_buf, "0");
                 ints->j_save_format++;
             }
         } else {
@@ -315,7 +399,7 @@ void print_hexup(s_info *ints) {
 void print_per(s_info *ints) {
     if (ints->width) ints->width -= 1;
     if (ints->width > 0 && !ints->dash) width_full(ints, ints->zero_padding);
-    strcat(ints->full_buf, "%");
+    s_strcat(ints->full_buf, "%");
     ints->j_save_format++;
     if (ints->width > 0 && ints->dash) width_full(ints, 0);
 }
@@ -323,6 +407,7 @@ void print_per(s_info *ints) {
 int check_format(const char *format, int temp) {
     if (format[temp] != 'c' && format[temp] != 's' && format[temp] != 'p' &&
         format[temp] != 'd' && format[temp] != 'i' && format[temp] != 'f' &&
+        format[temp] != 'g' && format[temp] != 'G' && format[temp] != 'e' &&
         format[temp] != 'u' && format[temp] != 'x' && format[temp] != 'X' &&
         format[temp] != '%' && format[temp] != '*' && format[temp] != 'n' &&
         format[temp] != 'o' && !(format[temp] >= '1' && format[temp] <= '9')) {
@@ -334,6 +419,7 @@ int check_format(const char *format, int temp) {
 int check_format_letter(const char *format, int temp) {
     if (format[temp] != 'c' && format[temp] != 's' && format[temp] != 'p' &&
         format[temp] != 'd' && format[temp] != 'i' && format[temp] != 'f' &&
+        format[temp] != 'g' && format[temp] != 'G' && format[temp] != 'e' &&
         format[temp] != 'n' && format[temp] != 'u' && format[temp] != 'x' &&
         format[temp] != 'X' && format[temp] != 'o' && format[temp] != '%' &&
         (format[temp] >= '0' && format[temp] <= '9')) {
@@ -345,6 +431,7 @@ int check_format_letter(const char *format, int temp) {
 int check_format_letter_2(const char *format, int temp) {
     if (format[temp] != 'c' && format[temp] != 's' && format[temp] != 'p' &&
         format[temp] != 'd' && format[temp] != 'i' && format[temp] != 'f' &&
+        format[temp] != 'g' && format[temp] != 'G' && format[temp] != 'e' &&
         format[temp] != 'u' && format[temp] != 'x' && format[temp] != 'X' &&
         format[temp] != 'n' && format[temp] != 'o' && format[temp] != '%' &&
         format[temp] != '.' && (format[temp] >= '0' && format[temp] <= '9')) {
@@ -475,12 +562,12 @@ void width_full(s_info *ints, int flag) {
     int i = -1;
     if (!flag) {
         while (++i < ints->width) {
-            strcat(ints->full_buf, " ");
+            s_strcat(ints->full_buf, " ");
             ints->j_save_format++;
         }
     } else {
         while (++i < ints->width) {
-            strcat(ints->full_buf, "0");
+            s_strcat(ints->full_buf, "0");
             ints->j_save_format++;
         }
     }
@@ -489,8 +576,8 @@ void width_full(s_info *ints, int flag) {
 void prec_ful(s_info *ints) {
     int i = -1;
     while (++i < ints->precision) {
+        s_strcat(ints->full_buf, "0");
         ints->j_save_format++;
-        strcat(ints->full_buf, "0");
     }
 }
 
@@ -498,7 +585,7 @@ int put_str(s_info *ints, char *s) {
     int i = 0;
     if (!s) {
         if (!ints->point) {
-            strcat(ints->full_buf, "(null)");
+            s_strcat(ints->full_buf, "(null)");
             ints->j_save_format++;
         } else {
             put_str(ints, "(null)");
@@ -548,7 +635,7 @@ void point_b(s_info *ints, unsigned long long numb, char x) {
         l[i] = base[numb];
         i++;
     }
-    strcat(ints->full_buf, l);
+    s_strcat(ints->full_buf, l);
     ints->j_save_format++;
 }
 
@@ -566,7 +653,7 @@ void point_o(s_info *ints, unsigned long long numb, char o) {
         l[i] = base[numb];
         i++;
     }
-    strcat(ints->full_buf, l);
+    s_strcat(ints->full_buf, l);
     ints->j_save_format++;
 }
 
@@ -595,7 +682,7 @@ char *itoa(int value, char *result, int base) {
 }
 
 void litle_if(s_info *ints, int *numb) {
-    strcat(ints->full_buf, "-");
+    s_strcat(ints->full_buf, "-");
     ints->j_save_format++;
     *numb = 147483648;
     if (ints->width > 0 && !ints->dash) {
@@ -612,16 +699,16 @@ void if_next(s_info *ints, int *numb) {
         width_full(ints, ints->zero_padding);
     if (ints->width > 0 && !ints->dash && ints->zero_padding) {
         if (!ints->point) {
-            strcat(ints->full_buf, "-");
+            s_strcat(ints->full_buf, "-");
             ints->j_save_format++;
             width_full(ints, ints->zero_padding);
         } else {
             width_full(ints, 0);
-            strcat(ints->full_buf, "-");
+            s_strcat(ints->full_buf, "-");
             ints->j_save_format++;
         }
     } else {
-        strcat(ints->full_buf, "-");
+        s_strcat(ints->full_buf, "-");
         ints->j_save_format++;
     }
     if (ints->precision > 0) prec_ful(ints);
@@ -650,18 +737,57 @@ int str_else(char *s, s_info *ints) {
     if (ints->point) {
         if (i != ints->precision) {
             if (ints->flag_f_float) {
-                strcat(ints->full_buf, s);
+                s_strcat(ints->full_buf, s);
                 ints->j_save_format++;
             } else {
-                strncat(ints->full_buf, s, ints->precision);
+                s_strncat(ints->full_buf, s, ints->precision);
                 ints->j_save_format++;
             }
         }
     } else {
-        strcat(ints->full_buf, s);
+        s_strcat(ints->full_buf, s);
         ints->j_save_format++;
     }
     return i;
+}
+
+char *s_strncat(char *dest, const char *src, s21_size_t n) {
+    int start = s21strlen(dest);
+    unsigned int i = 0;
+    for (; i < n; i++) {
+        dest[start + i] = src[i];
+    }
+    dest[start + i] = '\0';
+    return dest;
+}
+
+void flag_exp(s_info *ints) {
+    double val = va_arg(ints->args, double);
+    char buff[CHAR_PATTERN] = {0};
+    int pow = 0;
+    char sign = (int)val == 0 ? '-' : '+';
+    if ((int)val - val) {
+        while ((int)val == 0) {
+            pow++;
+            val *= 10;
+        }
+    } else {
+        sign = '+';
+    }
+    while ((int)val / 10 != 0) {
+        pow++;
+        val /= 10;
+    }
+    ftoa(val, buff, ints);
+    s21_size_t i = s21strlen(buff);
+    buff[i] = 'e';
+    buff[i + 1] = sign;
+    buff[i + 3] = pow % 10 + '0';
+    pow /= 10;
+    buff[i + 2] = pow % 10 + '0';
+    buff[i + 4] = '\0';
+    s_strcat(ints->full_buf, buff);
+    ints->j_save_format++;
 }
 
 void hexup_help(s_info *ints, unsigned int hexup) {
@@ -677,7 +803,7 @@ void hexup_help(s_info *ints, unsigned int hexup) {
         width_full(ints, 0);
     }
     if (ints->hash && hexup) {
-        strcat(ints->full_buf, "0X");
+        s_strcat(ints->full_buf, "0X");
         ints->j_save_format++;
         ints->width -= 2;
     }
@@ -699,7 +825,7 @@ void hex_help(s_info *ints, unsigned int hexal) {
         width_full(ints, 0);
     }
     if (ints->hash && hexal) {
-        strcat(ints->full_buf, "0x");
+        s_strcat(ints->full_buf, "0x");
         ints->j_save_format++;
         ints->width -= 2;
     }
@@ -720,10 +846,10 @@ void numb_if(int numb, s_info *ints) {
         ints->width -= n_len(numb);
     }
     if (ints->sign && numb >= 0) {
-        strcat(ints->full_buf, "+");
+        s_strcat(ints->full_buf, "+");
         ints->j_save_format++;
     } else if (ints->space && numb >= 0) {
-        strcat(ints->full_buf, " ");
+        s_strcat(ints->full_buf, " ");
         ints->j_save_format++;
     }
 }

@@ -4,7 +4,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#define CHAR_PATTERN 40
+#define CHAR_PATTERN 1000
+
+typedef long unsigned s21_size_t;
 
 typedef struct info {
     va_list args;
@@ -23,12 +25,14 @@ typedef struct info {
     int j_save_format;
     int flag_f_float;
     int flag_o;
+    int flag_e;
     char full_buf[CHAR_PATTERN];
 } s_info;
 
 char *itoa(int value, char *result, int base);
 int s21_ssprintf(char *str, const char *format, ...);
 void wparg_help(s_info *ints);
+char *s_strncat(char *dest, const char *src, s21_size_t n);
 void print_res(s_info *ints, const char *str, int temp);
 int print_format(s_info *ints, const char *format, int temp);
 void print_unsigned(s_info *ints);
@@ -49,7 +53,9 @@ int check_point(s_info *ints, const char *format, int temp);
 int check_wp(s_info *ints, const char *format, int temp);
 int check_wparg(s_info *ints, const char *format, int temp);
 int n_len(int n);
+void s21_sprintf_g(s_info *ints);
 
+void flag_exp(s_info *ints);
 void ftoa(float n, char *res, s_info *ints);
 void reverse(char *str, int len);
 int intToStr(int x, char str[], int d);
@@ -68,6 +74,7 @@ int str_else(char *s, s_info *ints);
 void hexup_help(s_info *ints, unsigned int hexup);
 void hex_help(s_info *ints, unsigned int hexal);
 void numb_if(int numb, s_info *ints);
+char *s_strcat(char *dest, const char *src);
 void unsint_if(unsigned int uns, s_info *ints);
 int check_help(s_info *ints, const char *format, int temp);
 size_t s21strlen(const char *str);
@@ -75,9 +82,11 @@ size_t s21strlen(const char *str);
 int main() {
     char k[10000] = {0};
     // int s = 10;
-    s21_ssprintf(k, "%p %d %s", 454, 23, "asd");
-    // sprintf(k,"%p", 454);
-    printf("%s", k);
+    s21_ssprintf(k, "%.3e", 0.0000004);
+    // sprintf(k, "%.3e", 0.0000004);
+    // s21_ssprintf(k, "%g %d %f %c", 0.000000010001, 12323, 5155.2222, 'd');
+    // sprintf(k, "%f %d %f %d %.6s %g %e %p %n", 124.41411, 42, 1231.5515, 215, "asdasdasdasd", 0.0000004, 1.1231231231, 16, &s);
+    printf("%s\n", k);
     // printf("%d\n", s);
     return 0;
 }
