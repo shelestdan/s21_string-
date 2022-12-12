@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
 
 typedef long unsigned s21_size_t;
 #define s21_NULL (void*)0

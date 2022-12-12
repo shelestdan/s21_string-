@@ -1,5 +1,7 @@
 #include "s21_string.h"
 #include "unit_test.h"
+#include <stdlib.h>
+
 
 #define BUFF_SIZE 512
 
