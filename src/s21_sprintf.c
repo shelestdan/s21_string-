@@ -198,8 +198,6 @@ long double make_round(long double num, s_info *ints) {
     temp = (temp + 0.5);
     num = temp;
     if (ints->flag_g) {
-
-
     }
     return num;
 }
@@ -228,63 +226,10 @@ void ftoa(long double n, char *res, s_info *ints) {
     }
 }
 
-int flag_exp_g(s_info *ints, double b) {
-    double val = b;
-    int e = 0;
-    if (val >= 10) {
-        while (val >= 10) {
-            val /= 10.0;
-            e += 1;
-        }
-    } else if (val < 1 && val != 0) {
-        while (val < 1) {
-            val *= 10;
-            e -= 1;
-        }
-    }
-    val = round(val * pow(10, ints->precision)) * pow(10, -(ints->precision));
-    if (val >= 10) {
-        val /= 10.0;
-        e += 1;
-    } else if (val < 1 && val != 0) {
-        val *= 10;
-        e -= 1;
-    }
-    // printf("%d", e);
-    return e;
-}
-
 void s21_sprintf_g(s_info *ints) {
-    // double b = 0;
-    // char pattern_g[CHAR_PATTERN] = {0};
-    // b = va_arg(ints->args, double);
-    // ftoa(b, pattern_g, ints);
-    // printf("-%s-\n", pattern_g);
-    // if (ints->precision == 0)
-    //   ints->precision = 6;
-    // else if (ints->precision == 4)
-    //   ints->precision = 0;
-    // int prec = ints->precision;
-    // long double b_copy = b;
-    // int pow = 0;
-    // double val = b;
-    // if ((int)val - val) {
-    //   while ((int)val == 0) {
-    //     pow++;
-    //     val *= 10;
-    //   }
-    // }
-    // if (pow > 4) {
-    //   ints->precision = 0;
-    //   ftoa(b, pattern_g, ints);
-    // } else {
-    //   ints->precision = 6;
-    //   ftoa(b, pattern_g, ints);
-    //   s_strcat(ints->full_buf, pattern_g);
-    // }
-
     double val = va_arg(ints->args, double);
     char buff[CHAR_PATTERN] = {0};
+    double buff_g = val;
     int pow = 0;
     char sign = (int)val == 0 ? '-' : '+';
     if ((int)val - val) {
@@ -299,23 +244,37 @@ void s21_sprintf_g(s_info *ints) {
         pow++;
         val /= 10;
     }
-
-    printf("!%d!", pow);
-
     if (pow <= 4) {
+        ftoa(buff_g, buff, ints);
+        s21_size_t number = s21strlen(buff) - 1;
+        while (number) {
+            if (buff[number] == '0') {
+                buff[number] = '\0';
+                number--;
+            } else if (buff[number] != '0') {
+                break;
+            }
+        }
 
+        printf("!%Ld!\n", -number);
+        number = ints->width - (int)number - 1;
+        int number2 = (int)ints->width - number - 1;
+        int number3 = number;
+        while (number3 > 0) {
+            s_strcat(ints->full_buf, " ");
+            number3--;
+        }
+        printf("!%d!\n", 13);
+        s_strcat(ints->full_buf, buff);
     } else {
         ftoa(val, buff, ints);
-        while (buff[ints->precision] == '0' || buff[ints->precision] == '.')
-        {
+        while (buff[ints->precision] == '0' || buff[ints->precision] == '.') {
             buff[ints->precision] = '\0';
             ints->precision--;
         }
-
         if (buff[ints->precision] != '0') {
             buff[ints->precision + 1] = '\0';
         }
-
         s21_size_t i = s21strlen(buff);
         buff[i] = 'e';
         buff[i + 1] = sign;
@@ -326,32 +285,8 @@ void s21_sprintf_g(s_info *ints) {
         s_strcat(ints->full_buf, buff);
         ints->j_save_format++;
     }
-    // char buff[CHAR_PATTERN] = {0};
-    // char sign = (int)val == 0 ? '+' : '-';
-    // if (pow > 4) { // условие без точности
-    //   intToStr(val, buff, 0);
-    //   s21_size_t i = s21strlen(buff);
-    //   buff[i] = 'e';
-    //   buff[i + 1] = sign;
-    //   buff[i + 3] = pow % 10 + '0';
-    //   pow /= 10;
-    //   buff[i + 2] = pow % 10 + '0';
-    //   buff[i + 4] = '\0';
-    //   s_strcat(ints->full_buf, buff);
-    //   ints->j_save_format++;
-    // }
 }
 
-void ftoa_g(float n, char *res, s_info *ints) {
-    int ipart = (int)n;
-    float fpart = n - (float)ipart;
-    int i = intToStr(ipart, res, 0);
-    if (ints->precision != 0) {
-        res[i] = '.';
-        fpart = fpart * pow(10, ints->precision);
-        intToStr((int)fpart, res + i + 1, ints->precision);
-    }
-}
 void print_float(s_info *ints) {
     double numb_fl = 0;
     int len;
