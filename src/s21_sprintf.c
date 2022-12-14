@@ -65,6 +65,7 @@ void print_res(s_info *ints, const char *str, int temp) {
         print_str(ints);
     }
     if (str[temp] == 'e') flag_exp(ints);
+    if (str[temp] == 'E') flag_exp(ints);
     if (str[temp] == 'h') {
         ints->flag_h++;
         temp++;
@@ -241,59 +242,97 @@ int flag_exp_g(s_info *ints, double b) {
         val *= 10;
         e -= 1;
     }
+    // printf("%d", e);
     return e;
 }
 
 void s21_sprintf_g(s_info *ints) {
-    double b = 0;
-    char pattern_g[CHAR_PATTERN] = {0};
-    b = va_arg(ints->args, double);
-    if (ints->precision == 0)
-        ints->precision = 6;
-    else if (ints->precision == 1)
-        ints->precision = 1;
-    long double b_copy = b;
-    if (b_copy < 0) b_copy *= -1;
-    int e = flag_exp_g(ints, b);
-    if (ints->precision > e && e >= -4) {
-        ftoa(b, pattern_g, ints);
-        s_strcat(ints->full_buf, pattern_g);
-    } else {
-        char buff[CHAR_PATTERN] = {0};
-        int pow = 0;
-        double val = b;
-        char sign = (int)val == 0 ? '-' : '+';
-        if ((int)val - val) {
-            while ((int)val == 0) {
-                pow++;
-                val *= 10;
-            }
-        } else {
-            sign = '+';
-        }
-        while ((int)val / 10 != 0) {
+    // double b = 0;
+    // char pattern_g[CHAR_PATTERN] = {0};
+    // b = va_arg(ints->args, double);
+    // ftoa(b, pattern_g, ints);
+    // printf("-%s-\n", pattern_g);
+    // if (ints->precision == 0)
+    //   ints->precision = 6;
+    // else if (ints->precision == 4)
+    //   ints->precision = 0;
+    // int prec = ints->precision;
+    // long double b_copy = b;
+    // int pow = 0;
+    // double val = b;
+    // if ((int)val - val) {
+    //   while ((int)val == 0) {
+    //     pow++;
+    //     val *= 10;
+    //   }
+    // }
+    // if (pow > 4) {
+    //   ints->precision = 0;
+    //   ftoa(b, pattern_g, ints);
+    // } else {
+    //   ints->precision = 6;
+    //   ftoa(b, pattern_g, ints);
+    //   s_strcat(ints->full_buf, pattern_g);
+    // }
+
+    double val = va_arg(ints->args, double);
+    char buff[CHAR_PATTERN] = {0};
+    int pow = 0;
+    char sign = (int)val == 0 ? '-' : '+';
+    if ((int)val - val) {
+        while ((int)val == 0) {
             pow++;
-            val /= 10;
+            val *= 10;
         }
-        ftoa(val, buff, ints);
-        s21_size_t i = s21strlen(buff);
-        buff[i] = 'e';
-        buff[i + 1] = sign;
-        buff[i + 3] = pow % 10 + '0';
-        pow /= 10;
-        buff[i + 2] = pow % 10 + '0';
-        buff[i + 4] = '\0';
-        s_strcat(ints->full_buf, buff);
-        ints->j_save_format++;
+    } else {
+        sign = '+';
     }
+    while ((int)val / 10 != 0) {
+        pow++;
+        val /= 10;
+    }
+    ftoa(val, buff, ints);
+    s21_size_t i = s21strlen(buff);
+    buff[i] = 'e';
+    buff[i + 1] = sign;
+    buff[i + 3] = pow % 10 + '0';
+    pow /= 10;
+    buff[i + 2] = pow % 10 + '0';
+    buff[i + 4] = '\0';
+    s_strcat(ints->full_buf, buff);
+    ints->j_save_format++;
+
+    // char buff[CHAR_PATTERN] = {0};
+    // char sign = (int)val == 0 ? '+' : '-';
+    // if (pow > 4) { // условие без точности
+    //   intToStr(val, buff, 0);
+    //   s21_size_t i = s21strlen(buff);
+    //   buff[i] = 'e';
+    //   buff[i + 1] = sign;
+    //   buff[i + 3] = pow % 10 + '0';
+    //   pow /= 10;
+    //   buff[i + 2] = pow % 10 + '0';
+    //   buff[i + 4] = '\0';
+    //   s_strcat(ints->full_buf, buff);
+    //   ints->j_save_format++;
+    // }
 }
 
+void ftoa_g(float n, char *res, s_info *ints) {
+    int ipart = (int)n;
+    float fpart = n - (float)ipart;
+    int i = intToStr(ipart, res, 0);
+    if (ints->precision != 0) {
+        res[i] = '.';
+        fpart = fpart * pow(10, ints->precision);
+        intToStr((int)fpart, res + i + 1, ints->precision);
+    }
+}
 void print_float(s_info *ints) {
     double numb_fl = 0;
     int len;
     char pattern_f_d[9000] = {0};
     numb_fl = va_arg(ints->args, double);
-
     ftoa(numb_fl, pattern_f_d, ints);
     if (ints->flag_dash) ints->width--;
     len = s21strlen(pattern_f_d);
@@ -361,6 +400,8 @@ void print_str(s_info *ints) {
     }
     ints->j_save_format += len;
     ints->j_save_format++;
+    if (ints->sign) ints->sign = 0;
+    if (ints->dash) ints->space = 0;
     if (ints->width && str && ints->precision < len && ints->point &&
         ints->precision >= 0)
         ints->width -= ints->precision;
@@ -463,10 +504,11 @@ int check_format(const char *format, int temp, s_info *ints) {
     if ((format[temp] != 'c' && format[temp] != 's' && format[temp] != 'p' &&
          format[temp] != 'd' && format[temp] != 'i' && format[temp] != 'f' &&
          format[temp] != 'g' && format[temp] != 'G' && format[temp] != 'e' &&
-         format[temp] != 'u' && format[temp] != 'x' && format[temp] != 'X' &&
-         format[temp] != 'h' && format[temp] != 'l' && format[temp] != 'L' &&
-         format[temp] != '%' && format[temp] != '*' && format[temp] != 'n' &&
-         format[temp] != 'o' && !(format[temp] >= '0' && format[temp] <= '9')) ||
+         format[temp] != 'E' && format[temp] != 'u' && format[temp] != 'x' &&
+         format[temp] != 'X' && format[temp] != 'h' && format[temp] != 'l' &&
+         format[temp] != 'L' && format[temp] != '%' && format[temp] != '*' &&
+         format[temp] != 'n' && format[temp] != 'o' &&
+         !(format[temp] >= '0' && format[temp] <= '9')) ||
         (format[temp] == '-')) {
         if (format[temp] == '0') ints->flag_zero++;
         return 1;
@@ -478,10 +520,11 @@ int check_format_letter(const char *format, int temp, s_info *ints) {
     if ((format[temp] != 'c' && format[temp] != 's' && format[temp] != 'p' &&
          format[temp] != 'd' && format[temp] != 'i' && format[temp] != 'f' &&
          format[temp] != 'g' && format[temp] != 'G' && format[temp] != 'e' &&
-         format[temp] != 'h' && format[temp] != 'l' && format[temp] != 'L' &&
-         format[temp] != 'n' && format[temp] != 'u' && format[temp] != 'x' &&
-         format[temp] != '*' && format[temp] != 'X' && format[temp] != 'o' &&
-         format[temp] != '%' && (format[temp] >= '0' && format[temp] <= '9')) ||
+         format[temp] != 'E' && format[temp] != 'h' && format[temp] != 'l' &&
+         format[temp] != 'L' && format[temp] != 'n' && format[temp] != 'u' &&
+         format[temp] != 'x' && format[temp] != '*' && format[temp] != 'X' &&
+         format[temp] != 'o' && format[temp] != '%' &&
+         (format[temp] >= '0' && format[temp] <= '9')) ||
         (format[temp] == '-')) {
         if (format[temp] == '0') ints->flag_zero++;
         return 1;
@@ -494,9 +537,9 @@ int check_format_letter_2(const char *format, int temp, s_info *ints) {
          format[temp] != 'd' && format[temp] != 'i' && format[temp] != 'f' &&
          format[temp] != 'h' && format[temp] != 'l' && format[temp] != 'L' &&
          format[temp] != 'g' && format[temp] != 'G' && format[temp] != 'e' &&
-         format[temp] != 'u' && format[temp] != 'x' && format[temp] != 'X' &&
-         format[temp] != 'n' && format[temp] != 'o' && format[temp] != '%' &&
-         format[temp] != '*' && format[temp] != '.' &&
+         format[temp] != 'E' && format[temp] != 'u' && format[temp] != 'x' &&
+         format[temp] != 'X' && format[temp] != 'n' && format[temp] != 'o' &&
+         format[temp] != '%' && format[temp] != '*' && format[temp] != '.' &&
          (format[temp] >= '0' && format[temp] <= '9')) ||
         (format[temp] == '-')) {
         if (format[temp] == '0' && ints->point) ints->flag_zero++;
@@ -627,14 +670,34 @@ void width_full(s_info *ints, int flag) {
     char buff_null[100] = "0";
     size_t l = s21strlen(ints->full_buf);
     if (!flag) {
-        for (size_t i = l; i < l + ints->width; i++) {
-            ints->full_buf[i] = buff_space[0];
-            ints->j_save_format++;
+        if (ints->sign) {
+            ints->width--;
+            if (ints->space) {
+                ints->width++;
+                ints->space = 0;
+            }
+            for (size_t i = l; i < l + ints->width; i++) {
+                ints->full_buf[i] = buff_space[0];
+                ints->j_save_format++;
+            }
+        } else if (ints->width) {
+            if (ints->space) {
+                ints->width--;
+            }
+            for (size_t i = l; i < l + ints->width; i++) {
+                ints->full_buf[i] = buff_space[0];
+                ints->j_save_format++;
+            }
+        }
+        if (ints->space && !ints->width) {
+            ints->space = 0;
         }
         if (ints->sign) {
             s_strcat(ints->full_buf, "+");
             ints->j_save_format++;
+            ints->sign = 0;
         }
+
     } else {
         s_strcat(ints->full_buf, buff_null);
         ints->j_save_format++;
@@ -828,6 +891,14 @@ int str_else(char *s, s_info *ints) {
     int i = 0;
     if (ints->flag_dash) {
         s_strcat(ints->full_buf, "-");
+    } else if (ints->sign && !ints->space) {
+        s_strcat(ints->full_buf, "+");
+    }
+    if (ints->space && !ints->sign) {
+        s_strcat(ints->full_buf, " ");
+    }
+    if (ints->space && ints->sign) {
+        s_strcat(ints->full_buf, "+");
     }
     if (ints->point) {
         if (ints->flag_s) {
@@ -947,10 +1018,10 @@ void numb_if(int numb, s_info *ints) {
         ints->width -= n_len(numb);
     }
     if (ints->sign && numb >= 0) {
-        s_strcat(ints->full_buf, "+");
+        // s_strcat(ints->full_buf, "+");
         ints->j_save_format++;
     } else if (ints->space && numb >= 0) {
-        s_strcat(ints->full_buf, " ");
+        // s_strcat(ints->full_buf, " ");
         ints->j_save_format++;
     }
 }
