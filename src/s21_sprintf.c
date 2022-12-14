@@ -23,7 +23,6 @@ s_info *initialise(s_info *ints) {
     ints->flag_s = 0;
     ints->flag_dash = 0;
     ints->flag_zero = 0;
-    ints->flag_g = 0;
     ints->full_buf[CHAR_PATTERN] = 0;
     return (ints);
 }
@@ -75,10 +74,8 @@ void print_res(s_info *ints, const char *str, int temp) {
         ints->flag_l++;
         temp++;
     }
-    if (str[temp] == 'g' || str[temp] == 'G') {
-        ints->flag_g++;
-        s21_sprintf_g(ints);
-    }
+    if (str[temp] == 'g' || str[temp] == 'G') s21_sprintf_g(ints);
+
     if (str[temp] == 'p') print_pointer(ints);
     if (str[temp] == 'd' || str[temp] == 'i') print_numb(ints);
     if (str[temp] == 'f') {
@@ -197,8 +194,6 @@ long double make_round(long double num, s_info *ints) {
     temp *= pow(10, ints->precision);
     temp = (temp + 0.5);
     num = temp;
-    if (ints->flag_g) {
-    }
     return num;
 }
 
@@ -229,6 +224,7 @@ void ftoa(long double n, char *res, s_info *ints) {
 void s21_sprintf_g(s_info *ints) {
     double val = va_arg(ints->args, double);
     char buff[CHAR_PATTERN] = {0};
+    if (ints->sign) ints->width--;
     double buff_g = val;
     int pow = 0;
     char sign = (int)val == 0 ? '-' : '+';
@@ -255,8 +251,6 @@ void s21_sprintf_g(s_info *ints) {
                 break;
             }
         }
-
-        printf("!%Ld!\n", -number);
         number = ints->width - (int)number - 1;
         int number2 = (int)ints->width - number - 1;
         int number3 = number;
@@ -264,7 +258,15 @@ void s21_sprintf_g(s_info *ints) {
             s_strcat(ints->full_buf, " ");
             number3--;
         }
-        printf("!%d!\n", 13);
+        if (!ints->sign && ints->space) {
+            if (ints->width - s21strlen(buff) > 1) {
+                s_strcat(ints->full_buf, " ");
+            }
+        }
+        if (ints->sign) {
+            s_strcat(ints->full_buf, "+");
+            ints->space = 0;
+        }
         s_strcat(ints->full_buf, buff);
     } else {
         ftoa(val, buff, ints);
