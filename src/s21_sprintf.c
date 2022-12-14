@@ -1010,6 +1010,7 @@ void wparg_help(s_info *ints) {
     }
 }
 
+
 int check_help(s_info *ints, const char *format, int temp) {
     while (check_format_letter(format, temp, ints)) {
         ints->precision = (ints->precision * 10) + (format[temp] - 48);
