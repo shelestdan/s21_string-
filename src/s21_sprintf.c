@@ -23,6 +23,7 @@ s_info *initialise(s_info *ints) {
     ints->flag_s = 0;
     ints->flag_dash = 0;
     ints->flag_zero = 0;
+    ints->flag_g = 0;
     ints->full_buf[CHAR_PATTERN] = 0;
     return (ints);
 }
@@ -74,7 +75,10 @@ void print_res(s_info *ints, const char *str, int temp) {
         ints->flag_l++;
         temp++;
     }
-    if (str[temp] == 'g' || str[temp] == 'G') s21_sprintf_g(ints);
+    if (str[temp] == 'g' || str[temp] == 'G') {
+        ints->flag_g++;
+        s21_sprintf_g(ints);
+    }
     if (str[temp] == 'p') print_pointer(ints);
     if (str[temp] == 'd' || str[temp] == 'i') print_numb(ints);
     if (str[temp] == 'f') {
@@ -182,17 +186,21 @@ int intToStr(long long int x, char str[], int d) {
     return i;
 }
 
-long double make_round(long double num, int precision) {
+long double make_round(long double num, s_info *ints) {
     int ten = 0;
     while (num > 1) {
         num /= 10;
         ten++;
     }
-    if (!precision) num *= pow(10, ten);
+    if (!ints->precision) num *= pow(10, ten);
     double temp = num;
-    temp *= pow(10, precision);
+    temp *= pow(10, ints->precision);
     temp = (temp + 0.5);
     num = temp;
+    if (ints->flag_g) {
+
+
+    }
     return num;
 }
 
@@ -211,7 +219,7 @@ void ftoa(long double n, char *res, s_info *ints) {
     if (ints->precision != 0) {
         if (ipart == 0) res[0] = '0';
         res[i] = '.';
-        if (!ints->flag_zero) fpart = make_round(fpart, ints->precision);
+        if (!ints->flag_zero) fpart = make_round(fpart, ints);
         intToStr((unsigned long long int)fpart, res + i + 1, ints->precision);
     }
     if (ints->precision == 0) {
@@ -291,17 +299,33 @@ void s21_sprintf_g(s_info *ints) {
         pow++;
         val /= 10;
     }
-    ftoa(val, buff, ints);
-    s21_size_t i = s21strlen(buff);
-    buff[i] = 'e';
-    buff[i + 1] = sign;
-    buff[i + 3] = pow % 10 + '0';
-    pow /= 10;
-    buff[i + 2] = pow % 10 + '0';
-    buff[i + 4] = '\0';
-    s_strcat(ints->full_buf, buff);
-    ints->j_save_format++;
 
+    printf("!%d!", pow);
+
+    if (pow <= 4) {
+
+    } else {
+        ftoa(val, buff, ints);
+        while (buff[ints->precision] == '0' || buff[ints->precision] == '.')
+        {
+            buff[ints->precision] = '\0';
+            ints->precision--;
+        }
+
+        if (buff[ints->precision] != '0') {
+            buff[ints->precision + 1] = '\0';
+        }
+
+        s21_size_t i = s21strlen(buff);
+        buff[i] = 'e';
+        buff[i + 1] = sign;
+        buff[i + 3] = pow % 10 + '0';
+        pow /= 10;
+        buff[i + 2] = pow % 10 + '0';
+        buff[i + 4] = '\0';
+        s_strcat(ints->full_buf, buff);
+        ints->j_save_format++;
+    }
     // char buff[CHAR_PATTERN] = {0};
     // char sign = (int)val == 0 ? '+' : '-';
     // if (pow > 4) { // условие без точности
