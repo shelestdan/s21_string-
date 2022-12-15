@@ -1012,6 +1012,7 @@ void wparg_help(s_info *ints) {
     }
 }
 
+
 int check_help(s_info *ints, const char *format, int temp) {
     while (check_format_letter(format, temp, ints)) {
         ints->precision = (ints->precision * 10) + (format[temp] - 48);
@@ -1020,6 +1021,7 @@ int check_help(s_info *ints, const char *format, int temp) {
     }
     return temp;
 }
+
 
 size_t s21strlen(const char *str) {
     size_t i;
