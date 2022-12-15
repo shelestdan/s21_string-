@@ -14,7 +14,6 @@ s_info *initialise(s_info *ints) {
     ints->is_zero = 0;
     ints->space = 0;
     ints->hash = 0;
-    ints->numb_fl = 0;
     ints->j_save_format = 0;
     ints->flag_f_float = 0;
     ints->flag_o = 0;
@@ -190,7 +189,7 @@ long double make_round(long double num, s_info *ints) {
         ten++;
     }
     if (!ints->precision) num *= pow(10, ten);
-    double temp = num;
+    long double temp = num;
     temp *= pow(10, ints->precision);
     temp = (temp + 0.5);
     num = temp;
@@ -204,7 +203,7 @@ void ftoa(long double n, char *res, s_info *ints) {
     }
     if (ints->precision == 0 && !ints->flag_zero && !ints->point)
         ints->precision = 6;
-    int ipart = (int)n;
+    long long int ipart = (long long int)n;
     long double fpart = n - (long double)ipart;
     long long int i = intToStr(ipart, res, 0);
     if (n < 0) i++;
@@ -290,10 +289,12 @@ void s21_sprintf_g(s_info *ints) {
 }
 
 void print_float(s_info *ints) {
-    double numb_fl = 0;
-    int len;
+    long double numb_fl = 0;
+    int len = 0;
     char pattern_f_d[9000] = {0};
-    numb_fl = va_arg(ints->args, double);
+    // if (!(ints->flag_l)) numb_fl = va_arg(ints->args, double);
+    numb_fl = va_arg(ints->args, long double);
+    printf("%Lf", numb_fl);
     ftoa(numb_fl, pattern_f_d, ints);
     if (ints->flag_dash) ints->width--;
     len = s21strlen(pattern_f_d);
@@ -919,6 +920,11 @@ void flag_exp(s_info *ints) {
     pow /= 10;
     buff[i + 2] = pow % 10 + '0';
     buff[i + 4] = '\0';
+    if (ints->space && !ints->sign) {
+        s_strcat(ints->full_buf, " ");
+        ints->space = 0;
+    }
+    if (ints->sign) s_strcat(ints->full_buf, "+");
     s_strcat(ints->full_buf, buff);
     ints->j_save_format++;
 }
@@ -979,10 +985,10 @@ void numb_if(int numb, s_info *ints) {
         ints->width -= n_len(numb);
     }
     if (ints->sign && numb >= 0) {
-        // s_strcat(ints->full_buf, "+");
+        s_strcat(ints->full_buf, "+");
         ints->j_save_format++;
     } else if (ints->space && numb >= 0) {
-        // s_strcat(ints->full_buf, " ");
+        s_strcat(ints->full_buf, " ");
         ints->j_save_format++;
     }
 }
@@ -1012,7 +1018,6 @@ void wparg_help(s_info *ints) {
     }
 }
 
-
 int check_help(s_info *ints, const char *format, int temp) {
     while (check_format_letter(format, temp, ints)) {
         ints->precision = (ints->precision * 10) + (format[temp] - 48);
@@ -1021,7 +1026,6 @@ int check_help(s_info *ints, const char *format, int temp) {
     }
     return temp;
 }
-
 
 size_t s21strlen(const char *str) {
     size_t i;
