@@ -29,7 +29,7 @@ s_info *initialise(s_info *ints) {
 int s21_sprintf(char *str, const char *format, ...) {
     int i = -1;
     s_info *ints;
-    ints = (s_info *)calloc(1000, sizeof(s_info));
+    ints = (s_info *)calloc(10000, sizeof(s_info));
     if (!ints) {
         return -1;
     }
@@ -52,8 +52,8 @@ int s21_sprintf(char *str, const char *format, ...) {
     s_strcat(str, ints->full_buf);
     ints->full_buf[CHAR_PATTERN] = 0;
     va_end(ints->args);
-    free(ints);
     size_t end = s21strlen(ints->full_buf);
+    free(ints);
     return end;
 }
 
@@ -167,7 +167,6 @@ char *s_strcat(char *dest, const char *src) {
     }
     return dest;
 }
-
 int intToStr(long long int x, char str[], int d) {
     int i = 0;
     if (x == 0 && d == 0) d++;
@@ -201,21 +200,26 @@ void ftoa(long double n, char *res, s_info *ints) {
         n *= -1;
         ints->flag_dash++;
     }
-    if (ints->precision == 0 && !ints->flag_zero && !ints->point)
-        ints->precision = 6;
-    long long int ipart = (long long int)n;
+    int flag = 0;
+    if (!ints->precision && ints->point) flag = 1;
+    if (ints->precision == 0 && !ints->flag_zero && ints->point) ints->precision = 6;
+    int ipart = (int)n;
     long double fpart = n - (long double)ipart;
     long long int i = intToStr(ipart, res, 0);
     if (n < 0) i++;
     if (i == 0) i++;
     if (ints->precision != 0) {
         if (ipart == 0) res[0] = '0';
-        res[i] = '.';
+        if (flag) {
+            res[i +1] = '.';
+        }else {
+            res[i] = '.';
+        }
         if (!ints->flag_zero) fpart = make_round(fpart, ints);
         intToStr((unsigned long long int)fpart, res + i + 1, ints->precision);
     }
     if (ints->precision == 0) {
-        n = make_round(n, 0);
+        n = make_round(n, ints);
         intToStr((unsigned long long int)n, res, ints->precision);
     }
 }
@@ -251,7 +255,6 @@ void s21_sprintf_g(s_info *ints) {
             }
         }
         number = ints->width - (int)number - 1;
-        int number2 = (int)ints->width - number - 1;
         int number3 = number;
         while (number3 > 0) {
             s_strcat(ints->full_buf, " ");
@@ -289,24 +292,28 @@ void s21_sprintf_g(s_info *ints) {
 }
 
 void print_float(s_info *ints) {
-    long double numb_fl = 0;
+    double numb_fl = 0;
     int len = 0;
     char pattern_f_d[9000] = {0};
-    // if (!(ints->flag_l)) numb_fl = va_arg(ints->args, double);
-    numb_fl = va_arg(ints->args, long double);
-    printf("%Lf", numb_fl);
+    numb_fl = va_arg(ints->args, double);
+    if (numb_fl < 0) {
+        numb_fl *= -1.0;
+        ints->dash = 1;
+        ints->sign = 0;
+    }
     ftoa(numb_fl, pattern_f_d, ints);
     if (ints->flag_dash) ints->width--;
     len = s21strlen(pattern_f_d);
     if (ints->width) ints->width -= len;
     if (ints->sign) ints->width--;
+    if (ints->dash) ints->space = 0;
     if (ints->width > 0 && !ints->dash) width_full(ints, 0);
     ints->total_length += put_str(ints, pattern_f_d);
     if (ints->width > 0 && ints->dash) width_full(ints, 0);
 }
 
 void print_numb(s_info *ints) {
-    int numb;
+    long long int numb = 0;
     char n_number_buff[CHAR_PATTERN] = {0};
     if (!ints->flag_h && !ints->flag_l) numb = va_arg(ints->args, int);
     if (ints->flag_h && !ints->flag_l) {
@@ -314,8 +321,7 @@ void print_numb(s_info *ints) {
         numb = (int short)numb;
     }
     if (!ints->flag_h && ints->flag_l) {
-        numb = va_arg(ints->args, int);
-        numb = (long long int)numb;
+        numb = va_arg(ints->args, long long int);
     }
     if (ints->precision == 0 && numb == 0 && !ints->width && ints->point) {
         ints->is_zero = 1;
@@ -751,13 +757,13 @@ void point_o(s_info *ints, unsigned long long numb, char o) {
     ints->j_save_format++;
 }
 
-char *itoa(int value, char *result, int base) {
+char *itoa(long long int value, char *result, int base) {
     if (base < 2 || base > 36) {
         *result = '\0';
         return result;
     }
     char *ptr = result, *ptr1 = result, tmp_char;
-    int tmp_value;
+    long long int tmp_value = 0;
     do {
         tmp_value = value;
         value /= base;
@@ -775,13 +781,13 @@ char *itoa(int value, char *result, int base) {
     return result;
 }
 
-char *itoa_u(unsigned int value, char *result, int base) {
+char *itoa_u(unsigned long long int value, char *result, int base) {
     if (base < 2 || base > 36) {
         *result = '\0';
         return result;
     }
     char *ptr = result, *ptr1 = result, tmp_char;
-    int tmp_value;
+    long long int tmp_value;
     do {
         tmp_value = value;
         value /= base;
@@ -799,7 +805,7 @@ char *itoa_u(unsigned int value, char *result, int base) {
     return result;
 }
 
-void litle_if(s_info *ints, int *numb) {
+void litle_if(s_info *ints, long long  int *numb) {
     ints->j_save_format++;
     *numb = 2147483648;
     if (ints->width > 0 && !ints->dash) {
@@ -811,7 +817,7 @@ void litle_if(s_info *ints, int *numb) {
     *numb *= -1;
 }
 
-void if_next(s_info *ints, int *numb) {
+void if_next(s_info *ints, long long int *numb) {
     if (ints->width > 0 && !ints->dash && !ints->zero_padding)
         width_full(ints, ints->zero_padding);
     if (ints->width > 0 && !ints->dash && ints->zero_padding) {
@@ -832,7 +838,7 @@ void if_next(s_info *ints, int *numb) {
     *numb *= -1;
 }
 
-void else_if(s_info *ints, int *numb) {
+void else_if(s_info *ints, long long int *numb) {
     if (*numb == -2147483648) {
         litle_if(ints, numb);
     } else if (*numb < 0) {
@@ -851,10 +857,14 @@ void else_if(s_info *ints, int *numb) {
 
 int str_else(char *s, s_info *ints) {
     int i = 0;
-    if (ints->flag_dash) {
+    if (ints->flag_dash && !ints->sign) {
         s_strcat(ints->full_buf, "-");
     } else if (ints->sign && !ints->space) {
         s_strcat(ints->full_buf, "+");
+    }
+    if (ints->dash && !ints->space && !ints->sign) {
+        s_strcat(ints->full_buf, "-");
+        ints->j_save_format++;
     }
     if (ints->space && !ints->sign) {
         s_strcat(ints->full_buf, " ");
@@ -973,7 +983,7 @@ void hex_help(s_info *ints, unsigned int hexal) {
     }
 }
 
-void numb_if(int numb, s_info *ints) {
+void numb_if(long long int numb, s_info *ints) {
     if (ints->precision > 0 && numb >= 0) {
         ints->precision -= n_len(numb);
     } else if (ints->precision > 0 && numb < 0) {
