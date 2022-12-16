@@ -69,7 +69,7 @@ void print_res(s_info *ints, const char *str, int temp) {
   if (str[temp] == 'E') {
     ints->exp = 1;
     flag_exp(ints);
-  }
+  } 
   if (str[temp] == 'h') {
     ints->flag_h++;
     temp++;
@@ -766,7 +766,7 @@ void point_o(s_info *ints, unsigned long long numb, char o) {
 char *itoa(long long int value, char *result, int base) {
   if (base < 2 || base > 36) {
     *result = '\0';
-    return result;
+    return result;4
   }
   char *ptr = result, *ptr1 = result, tmp_char;
   long long int tmp_value = 0;

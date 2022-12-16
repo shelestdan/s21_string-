@@ -2,6 +2,9 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <float.h>
+#include <limits.h>
+#include <unistd.h>
 
 
 typedef long unsigned s21_size_t;
@@ -30,3 +33,8 @@ int s21_strncmp(const char *str1, const char *str2, s21_size_t n); //Сравн�
 char *s21_strtok(char *str, const char *delim); //Разбивает строку str на ряд токенов, разделенных delim.
 char *s21_strstr(const char* str1, const char *str2); //Находит первое вхождение всей строки needle (не включая завершающий нулевой символ), которая появляется в строке haystack.
 char *s21_strerror(int errnum); // нужен свой спринтф
+
+void *s21_to_lower(const char *str);
+void *s21_to_upper(const char *str);
+void *s21_trim(const char *src, const char *trim_chars);
+void *s21_insert(const char *src, const char *str, size_t start_index);
