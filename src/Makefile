@@ -1,3 +1,4 @@
+
 CC = gcc
 FLAG_C = -c
 FLAG_O = -o
@@ -13,24 +14,21 @@ all: clean s21_string.a test gcov_report
 # --- СОЗДАНИЕ БИБЛИОТЕКИ ФУНКЦИЙ ---
 
 s21_string.a:
-	gcc $(FLAG_C) $(FLAG_ER) --coverage $(s21_STRING_C) 
+	gcc $(FLAG_C) $(FLAG_ER) $(s21_STRING_C) 
 	ar rc s21_string.a $(s21_STRING_O) 
 	ranlib s21_string.a
 
-test: s21_string.a
-	gcc -std=c11 -D_GNU_SOURCE --coverage test.c -L. s21_string.a  -lcheck -lm -lpthread -o ./test.out
-	./test.out
-
+test : s21_string.a
+	$(CC) $(FLAG_C) $(FLAG_ER) $(TEST_CASES_C) all_tests_run.c
+	ar rc test_cases.a $(TEST_CASES_O)
+	ranlib test_cases.a
+	gcc -Wall -Werror -Wextra $(FLAG_COV) $(FLAG_O) tests s21_string.a test_cases.a $(s21_STRING_C) all_tests_run.o -lcheck
+	./tests
 gcov_report: test
-	gcov s21_*.gcda 
+	gcov s21_*.gcda	
 	gcovr -b 
 	gcovr
-	gcovr --html-details $(FLAG_O) ./report.html
-
-valgrind:
-	make s21_string.a
-	gcc -g test.c s21_string.a -o test -lcheck -lpthread -lm -D_GNU_SOURCE -lrt -lsubunit
-	CK_FORK=no valgrind --trace-children=yes --track-fds=yes --track-origins=yes --leak-check=full --show-leak-kinds=all --verbose --log-file=RESULT_VALGRIND.txt ./test 
+	gcovr --html-details $(FLAG_O) report.html
 
 clean:
 	-rm -rf *.o *.html *.gcda *.gcno *.css *.a *.gcov *.info *.out *.cfg *.txt
